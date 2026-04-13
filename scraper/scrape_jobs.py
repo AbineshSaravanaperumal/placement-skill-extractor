@@ -85,7 +85,8 @@ def scrape_naukri(role, location, pages=3):
         
         try:
             response = requests.get(url, headers=headers, timeout=10)
-            soup = BeautifulSoup(response.content, "html.parser")
+            response.encoding = response.apparent_encoding
+            soup = BeautifulSoup(response.text, "html.parser")
             
             # Refined selectors for modern Naukri structure (uses article tags often)
             cards = soup.find_all(['div', 'article'], class_=re.compile(r'jobTuple|srp-jobtuple|cust-job-tuple|tuple', re.I))
@@ -140,7 +141,8 @@ def scrape_timesjobs(role, location):
     print(f"Scraping TimesJobs — {url}")
     try:
         response = requests.get(url, headers=headers, timeout=15)
-        soup = BeautifulSoup(response.content, "html.parser")
+        response.encoding = response.apparent_encoding
+        soup = BeautifulSoup(response.text, "html.parser")
         cards = soup.find_all('li', class_='clearfix job-bx wht-shd-bx')
         
         print(f"Found {len(cards)} live cards on TimesJobs")
