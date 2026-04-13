@@ -64,18 +64,18 @@ def scrape_naukri(role, location, pages=3):
     }
     role_slug = role_map.get(role, role.lower().replace(" ", "-"))
     loc_slug = location.lower().replace(" ", "-")
-    
     for page in range(pages):
-        # Try both common Naukri URL patterns
+        # Try broader search patterns
+        role_q = role.replace(" ", "%20")
         if page == 0:
             urls = [
                 f"https://www.naukri.com/{role_slug}-jobs-in-{loc_slug}",
-                f"https://www.naukri.com/job-listings-{role_slug}-in-{loc_slug}"
+                f"https://www.naukri.com/jobs-in-{loc_slug}?k={role_q}"
             ]
         else:
             urls = [
                 f"https://www.naukri.com/{role_slug}-jobs-in-{loc_slug}-{page + 1}",
-                f"https://www.naukri.com/job-listings-{role_slug}-in-{loc_slug}-{page + 1}"
+                f"https://www.naukri.com/jobs-in-{loc_slug}-{page + 1}?k={role_q}"
             ]
             
         success = False
@@ -134,9 +134,10 @@ def scrape_timesjobs(role, location):
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
     
     # URL formatting
+    # Broader URL for TimesJobs
     role_q = role.replace(" ", "+")
     loc_q = location.replace(" ", "+")
-    url = f"https://www.timesjobs.com/candidate/job-search.html?searchType=personalizedSearch&from=submit&txtKeywords={role_q}&txtLocation={loc_q}"
+    url = f"https://www.timesjobs.com/candidate/job-search.html?searchType=personalizedSearch&from=submit&txtKeywords={role_q}&txtLocation={loc_q}&luceneResultSize=25"
     
     print(f"Scraping TimesJobs — {url}")
     try:
