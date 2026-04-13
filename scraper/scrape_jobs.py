@@ -7,6 +7,8 @@ import time
 from datetime import date
 import re
 
+print("SCRAPER_MODULE: Loaded version 1.0.4 with scrape_timesjobs")
+
 def get_db_path():
     """Returns absolute path to data/jobs.db using __file__."""
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

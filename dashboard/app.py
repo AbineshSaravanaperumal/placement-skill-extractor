@@ -15,6 +15,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+print("APP_VERSION: 1.0.4 - Role Filtering & Browser Headers")
 from scraper.scrape_jobs import create_table, scrape_naukri, scrape_timesjobs, save_to_db, get_db_path
 from processor.extract_skills import process_all_jobs, get_api_key
 from processor.analyze_data import get_top_skills, extract_salary_data, get_skill_gap
