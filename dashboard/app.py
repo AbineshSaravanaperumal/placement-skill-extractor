@@ -93,12 +93,12 @@ with st.sidebar:
             n_jobs = scrape_naukri(role, location, pages=2)
             t_jobs = scrape_timesjobs(role, location)
             
-            # Simple fallback if zero results
-            if not n_jobs and not t_jobs:
-                if "Engineer" in role:
-                    t_jobs = scrape_timesjobs(role.replace("Engineer", "Developer"), location)
-                elif "Developer" in role:
-                    t_jobs = scrape_timesjobs(role.replace("Developer", "Engineer"), location)
+            # AGGRESSIVE FALLBACK: Try partial keywords if role is multi-word
+            if not n_jobs and not t_jobs and " " in role:
+                first_word = role.split(" ")[0]
+                with st.status(f"Broadening search to '{first_word}'..."):
+                    n_jobs = scrape_naukri(first_word, location, pages=1)
+                    t_jobs = scrape_timesjobs(first_word, location)
             
             jobs = n_jobs + t_jobs
             saved = save_to_db(jobs)
