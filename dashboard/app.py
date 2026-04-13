@@ -5,6 +5,7 @@ import pandas as pd
 import sqlite3
 import os
 import sys
+import time
 from datetime import datetime
 from openai import OpenAI
 
@@ -88,16 +89,29 @@ with st.sidebar:
             create_table()
         
         with st.spinner(f"Scraping live jobs for {role}..."):
-            # Aggregating from multiple sources
-            jobs = scrape_naukri(role, location, pages=2)
-            jobs += scrape_timesjobs(role, location)
-            save_to_db(jobs)
+            # Try broader search for niche roles
+            n_jobs = scrape_naukri(role, location, pages=2)
+            t_jobs = scrape_timesjobs(role, location)
             
-        with st.spinner(f"Extracting skills for {len(jobs)} jobs via AI..."):
-            process_all_jobs()
+            # Simple fallback if zero results
+            if not n_jobs and not t_jobs:
+                if "Engineer" in role:
+                    t_jobs = scrape_timesjobs(role.replace("Engineer", "Developer"), location)
+                elif "Developer" in role:
+                    t_jobs = scrape_timesjobs(role.replace("Developer", "Engineer"), location)
             
-        st.success(f"Successfully processed {len(jobs)} live jobs!")
-        st.rerun()
+            jobs = n_jobs + t_jobs
+            saved = save_to_db(jobs)
+            
+        if not jobs:
+            st.error(f"Could not find any live listings for '{role}'. Try a different location or check back later.")
+        else:
+            with st.spinner(f"AI Brain processing {len(jobs)} jobs..."):
+                process_all_jobs(role_filter=role)
+            st.success(f"Success! Found {len(n_jobs)} (Naukri) + {len(t_jobs)} (TimesJobs) jobs.")
+            st.info(f"Saved {saved} new entries to insights.")
+            time.sleep(1)
+            st.rerun()
 
     st.divider()
     
