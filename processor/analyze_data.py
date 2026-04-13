@@ -4,6 +4,8 @@ import pandas as pd
 from collections import Counter
 import re
 
+print("ANALYZE_DATA_MODULE: Loaded version 1.0.4 with role_filter support")
+
 # module level merge rules
 MERGE_RULES = {
     "nodejs": "node.js", "node js": "node.js",

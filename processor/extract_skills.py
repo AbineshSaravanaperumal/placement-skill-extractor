@@ -4,6 +4,8 @@ import json
 import time
 from openai import OpenAI
 
+print("PROCESSOR_MODULE: Loaded version 1.0.4 with role_filter support")
+
 def get_db_path():
     """Returns absolute path to data/jobs.db using __file__."""
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
