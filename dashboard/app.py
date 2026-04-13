@@ -11,7 +11,7 @@ from openai import OpenAI
 # Add parent directory to path to allow imports from other folders
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from scraper.scrape_jobs import create_table, scrape_naukri, save_to_db, get_db_path
+from scraper.scrape_jobs import create_table, scrape_naukri, scrape_timesjobs, save_to_db, get_db_path
 from processor.extract_skills import process_all_jobs, get_api_key
 from processor.analyze_data import get_top_skills, extract_salary_data, get_skill_gap
 import json
@@ -82,17 +82,16 @@ with st.sidebar:
         with st.spinner("Initializing Database..."):
             create_table()
         
-        role_slug = role.lower().replace(" ", "-")
-        loc_slug = location.lower()
-        
-        with st.spinner(f"Scraping jobs for {role}..."):
-            jobs = scrape_naukri(role, location, pages=3)
+        with st.spinner(f"Scraping live jobs for {role}..."):
+            # Aggregating from multiple sources
+            jobs = scrape_naukri(role, location, pages=2)
+            jobs += scrape_timesjobs(role, location)
             save_to_db(jobs)
             
-        with st.spinner("Extracting skills via AI..."):
+        with st.spinner(f"Extracting skills for {len(jobs)} jobs via AI..."):
             process_all_jobs()
             
-        st.success(f"Successfully updated {len(jobs)} jobs!")
+        st.success(f"Successfully processed {len(jobs)} live jobs!")
         st.rerun()
 
     st.divider()

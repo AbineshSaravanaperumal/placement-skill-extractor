@@ -97,8 +97,48 @@ def scrape_naukri(role, location, pages=3):
             
     return jobs
 
+def scrape_timesjobs(role, location):
+    """Scrapes jobs from TimesJobs.com - much more friendly to requests."""
+    jobs = []
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+    
+    # URL formatting
+    role_q = role.replace(" ", "+")
+    loc_q = location.replace(" ", "+")
+    url = f"https://www.timesjobs.com/candidate/job-search.html?searchType=personalizedSearch&from=submit&txtKeywords={role_q}&txtLocation={loc_q}"
+    
+    print(f"Scraping TimesJobs — {url}")
+    try:
+        response = requests.get(url, headers=headers, timeout=15)
+        soup = BeautifulSoup(response.content, "html.parser")
+        cards = soup.find_all('li', class_='clearfix job-bx wht-shd-bx')
+        
+        print(f"Found {len(cards)} live cards on TimesJobs")
+        
+        for card in cards:
+            title = card.find('h2').text.strip()
+            # TimesJobs hides full desc, we take the key skills/snippet
+            desc = card.find('ul', class_='list-job-dtl clearfix').text.strip()
+            salary_tag = card.find('i', class_='rupee')
+            salary = salary_tag.parent.text.strip() if salary_tag else "Not disclosed"
+            
+            jobs.append({
+                "title": title,
+                "description": desc,
+                "salary": salary,
+                "role": role,
+                "location": location
+            })
+    except Exception as e:
+        print(f"TimesJobs error: {e}")
+        
+    return jobs
+
 def save_to_db(jobs):
     """Saves job listings to the database, skipping duplicates."""
+    if not jobs:
+        return 0
+        
     db_path = get_db_path()
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -108,7 +148,6 @@ def save_to_db(jobs):
     
     try:
         for i, job in enumerate(jobs):
-            # Check for duplicates (same title + scraped_on)
             cursor.execute(
                 "SELECT id FROM jobs WHERE title = ? AND scraped_on = ?", 
                 (job["title"], current_date)
@@ -134,5 +173,9 @@ def save_to_db(jobs):
 
 if __name__ == "__main__":
     create_table()
-    scraped_jobs = scrape_naukri("data-analyst", "bangalore", pages=3)
-    save_to_db(scraped_jobs)
+    # Try Naukri
+    jobs = scrape_naukri("data-analyst", "bangalore", pages=2)
+    # Fallback/Additional from TimesJobs
+    jobs += scrape_timesjobs("data-analyst", "bangalore")
+    
+    save_to_db(jobs)
