@@ -129,7 +129,7 @@ db_path = get_db_path()
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 try:
-    cursor.execute("SELECT COUNT(*) FROM jobs")
+    cursor.execute("SELECT COUNT(*) FROM jobs WHERE role = ?", (role,))
     job_count = cursor.fetchone()[0]
 except:
     job_count = 0
@@ -137,15 +137,15 @@ finally:
     conn.close()
 
 if job_count == 0:
-    st.warning("No data found in database.")
-    st.info("Please use the sidebar to 'Refresh Data' for your target role and location.")
+    st.warning(f"No data found for {role} in {location}.")
+    st.info("Please use the sidebar to 'Refresh Data' for this combination.")
     st.stop()
 
 # Load Data
-with st.spinner("Loading skills data..."):
-    all_skills = process_all_jobs()
+with st.spinner(f"Loading {role} data..."):
+    all_skills = process_all_jobs(role_filter=role)
     skill_df = get_top_skills(all_skills, top_n)
-    salary_df = extract_salary_data()
+    salary_df = extract_salary_data(role_filter=role)
 
 if skill_df.empty:
     st.warning("No skills processed yet.")

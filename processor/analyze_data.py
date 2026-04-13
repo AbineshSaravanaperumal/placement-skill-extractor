@@ -55,13 +55,17 @@ def get_top_skills(all_skills, top_n=15):
         
     return pd.DataFrame(data)
 
-def extract_salary_data():
-    """Parses numeric salary data from the database strings into LPA."""
+def extract_salary_data(role_filter=None):
+    """Parses numeric salary data from the database for a specific role."""
     db_path = get_db_path()
     try:
         conn = sqlite3.connect(db_path)
-        query = "SELECT salary FROM jobs WHERE salary IS NOT NULL AND salary != 'Not disclosed'"
-        df = pd.read_sql_query(query, conn)
+        if role_filter:
+            query = "SELECT salary FROM jobs WHERE role = ? AND salary IS NOT NULL AND salary != 'Not disclosed'"
+            df = pd.read_sql_query(query, conn, params=(role_filter,))
+        else:
+            query = "SELECT salary FROM jobs WHERE salary IS NOT NULL AND salary != 'Not disclosed'"
+            df = pd.read_sql_query(query, conn)
         conn.close()
     except:
         return None

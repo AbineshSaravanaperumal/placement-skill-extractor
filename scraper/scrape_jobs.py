@@ -118,8 +118,15 @@ def scrape_timesjobs(role, location):
         
         for card in cards:
             title = card.find('h2').text.strip()
-            # TimesJobs hides full desc, we take the key skills/snippet
-            desc = card.find('ul', class_='list-job-dtl clearfix').text.strip()
+            
+            # TimesJobs has 'Key Skills' in a specific div
+            key_skills_tag = card.find('span', string=re.compile(r'KeySkills', re.I))
+            if key_skills_tag and key_skills_tag.find_next_sibling('span'):
+                desc = key_skills_tag.find_next_sibling('span').text.strip()
+            else:
+                # Fallback to the general snippet
+                desc = card.find('ul', class_='list-job-dtl clearfix').text.strip()
+            
             salary_tag = card.find('i', class_='rupee')
             salary = salary_tag.parent.text.strip() if salary_tag else "Not disclosed"
             

@@ -50,8 +50,8 @@ def extract_skills_from_jd(description, client):
     except Exception as e:
         return []
 
-def process_all_jobs():
-    """Processes jobs with missing skills and returns a flat list of all skills."""
+def process_all_jobs(role_filter=None):
+    """Processes jobs with missing skills and returns a flat list of skills for a specific role."""
     db_path = get_db_path()
     api_key = get_api_key()
     client = OpenAI(api_key=api_key)
@@ -61,24 +61,22 @@ def process_all_jobs():
     all_skills = []
     
     try:
-        # Get jobs that need processing
+        # 1. Processing missing skills (always do this across all jobs to keep DB healthy)
         cursor.execute("SELECT id, description FROM jobs WHERE extracted_skills IS NULL AND description IS NOT NULL")
         to_process = cursor.fetchall()
         
-        total = len(to_process)
-        for i, (job_id, desc) in enumerate(to_process):
+        for job_id, desc in to_process:
             skills = extract_skills_from_jd(desc, client)
             cursor.execute("UPDATE jobs SET extracted_skills = ? WHERE id = ?", (json.dumps(skills), job_id))
-            
-            if total > 5 and (i + 1) % 5 == 0:
-                print(f"Processed {i + 1}/{total}...")
-            
-            time.sleep(0.3)  # Respect API limits
-            
+        
         conn.commit()
         
-        # Collect all skills for the return value
-        cursor.execute("SELECT extracted_skills FROM jobs WHERE extracted_skills IS NOT NULL")
+        # 2. Collect skills for the specific role requested
+        if role_filter:
+            cursor.execute("SELECT extracted_skills FROM jobs WHERE extracted_skills IS NOT NULL AND role = ?", (role_filter,))
+        else:
+            cursor.execute("SELECT extracted_skills FROM jobs WHERE extracted_skills IS NOT NULL")
+            
         rows = cursor.fetchall()
         for row in rows:
             try:
