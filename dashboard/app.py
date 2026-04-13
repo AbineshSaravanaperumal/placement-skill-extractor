@@ -8,8 +8,12 @@ import sys
 from datetime import datetime
 from openai import OpenAI
 
-# Add parent directory to path to allow imports from other folders
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add project root to sys.path
+import os
+import sys
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 from scraper.scrape_jobs import create_table, scrape_naukri, scrape_timesjobs, save_to_db, get_db_path
 from processor.extract_skills import process_all_jobs, get_api_key
