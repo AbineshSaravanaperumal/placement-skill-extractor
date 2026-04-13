@@ -54,16 +54,34 @@ def scrape_naukri(role, location, pages=3):
     }
     
     # Naukri URL patterns
-    role_slug = role.lower().replace(" ", "-")
+    # Better slug mapping for complex roles
+    role_map = {
+        "ML Engineer": "machine-learning-engineer",
+        "Business Analyst": "business-analyst",
+        "Software Developer": "software-developer",
+        "Data Scientist": "data-scientist",
+        "Data Analyst": "data-analyst"
+    }
+    role_slug = role_map.get(role, role.lower().replace(" ", "-"))
     loc_slug = location.lower().replace(" ", "-")
     
     for page in range(pages):
+        # Try both common Naukri URL patterns
         if page == 0:
-            url = f"https://www.naukri.com/{role_slug}-jobs-in-{loc_slug}"
+            urls = [
+                f"https://www.naukri.com/{role_slug}-jobs-in-{loc_slug}",
+                f"https://www.naukri.com/job-listings-{role_slug}-in-{loc_slug}"
+            ]
         else:
-            url = f"https://www.naukri.com/{role_slug}-jobs-in-{loc_slug}-{page + 1}"
+            urls = [
+                f"https://www.naukri.com/{role_slug}-jobs-in-{loc_slug}-{page + 1}",
+                f"https://www.naukri.com/job-listings-{role_slug}-in-{loc_slug}-{page + 1}"
+            ]
             
-        print(f"Scraping page {page + 1} — {url}")
+        success = False
+        for url in urls:
+            if success: break
+            print(f"Scraping Naukri — {url}")
         
         try:
             response = requests.get(url, headers=headers, timeout=10)
@@ -76,33 +94,36 @@ def scrape_naukri(role, location, pages=3):
             if not cards:
                 cards = soup.select('article, .jobTuple, [class*="jobTuple"], [class*="JobTuple"]')
             
-            print(f"Found {len(cards)} cards on page {page + 1}")
+            if len(cards) > 0:
+                success = True
+                print(f"Success! Found {len(cards)} cards on page {page + 1}")
+                
+                for card in cards:
+                    try:
+                        title_tag = card.find(['a', 'div', 'h3'], class_=re.compile(r'title|job-title', re.I))
+                        desc_tag = card.find(['span', 'div', 'p'], class_=re.compile(r'job-desc|description', re.I))
+                        salary_tag = card.find(['span', 'li', 'i'], class_=re.compile(r'salary', re.I))
+                        
+                        if title_tag:
+                            title = title_tag.get_text(strip=True)
+                            description = desc_tag.get_text(strip=True) if desc_tag else "N/A"
+                            salary = salary_tag.get_text(strip=True) if salary_tag else "Not disclosed"
+                            
+                            jobs.append({
+                                "title": title,
+                                "description": description,
+                                "salary": salary,
+                                "role": role,
+                                "location": location
+                            })
+                    except:
+                        continue
             
-            for card in cards:
-                try:
-                    # Generic searches for title, desc and salary
-                    title_tag = card.find(['a', 'div', 'h3'], class_=re.compile(r'title|job-title', re.I))
-                    desc_tag = card.find(['span', 'div', 'p'], class_=re.compile(r'job-desc|description', re.I))
-                    salary_tag = card.find(['span', 'li', 'i'], class_=re.compile(r'salary', re.I))
-                    
-                    title = title_tag.get_text(strip=True) if title_tag else "N/A"
-                    description = desc_tag.get_text(strip=True) if desc_tag else "N/A"
-                    salary = salary_tag.get_text(strip=True) if salary_tag else "Not disclosed"
-                    
-                    jobs.append({
-                        "title": title,
-                        "description": description,
-                        "salary": salary,
-                        "role": role,
-                        "location": location
-                    })
-                except Exception as e:
-                    continue
-                    
-            time.sleep(2)  # Delay between pages
+            time.sleep(1.5)
             
         except Exception as e:
-            print(f"Error scraping page {page + 1}: {e}")
+            print(f"Naukri attempt error: {e}")
+            continue
             
     return jobs
 
