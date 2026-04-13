@@ -195,7 +195,7 @@ with col_left:
             height=max(420, len(skill_df) * 38),
             margin=dict(l=0, r=0, t=20, b=0)
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, theme="streamlit", width="stretch")
     else:
         st.info("Insufficient data for charting.")
 
@@ -213,7 +213,7 @@ with col_right:
             yaxis_title="LPA",
             margin=dict(l=0, r=0, t=20, b=0)
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, theme="streamlit", width="stretch")
     else:
         st.info("Salary data not available for this set.")
 
@@ -230,7 +230,7 @@ st.dataframe(
         "Percentage": st.column_config.ProgressColumn("Demand Score", format="%.1f%%", min_value=0, max_value=100)
     },
     hide_index=True,
-    use_container_width=True
+    width="stretch"
 )
 
 today_str = datetime.now().strftime("%Y%m%d")
