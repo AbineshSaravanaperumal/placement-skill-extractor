@@ -14,6 +14,36 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from scraper.scrape_jobs import create_table, scrape_naukri, save_to_db, get_db_path
 from processor.extract_skills import process_all_jobs, get_api_key
 from processor.analyze_data import get_top_skills, extract_salary_data, get_skill_gap
+import json
+
+def seed_data():
+    """Seeds the database with sample data if it's empty."""
+    db_path = get_db_path()
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Check if already seeded
+    cursor.execute("SELECT COUNT(*) FROM jobs")
+    if cursor.fetchone()[0] > 0:
+        conn.close()
+        return
+
+    sample_jobs = [
+        ("Senior Data Analyst", "Python, SQL, Tableau, AWS, Excel", "12-18 Lacs", "Data Analyst", "Bangalore", ["Python", "SQL", "Tableau", "AWS", "Excel"]),
+        ("Data Scientist", "Machine Learning, TensorFlow, Python, Statistics", "15-25 Lacs", "Data Scientist", "Bangalore", ["Python", "Machine Learning", "TensorFlow", "Statistics"]),
+        ("Junior Analyst", "SQL, Power BI, Excel, Statistics", "6-10 Lacs", "Data Analyst", "Bangalore", ["SQL", "Power BI", "Excel"]),
+        ("Data Engineer", "SQL, Spark, GCP, Python, Hadoop", "18-28 Lacs", "Data Analyst", "Bangalore", ["SQL", "Spark", "GCP", "Python"]),
+        ("BI Developer", "Power BI, SQL, Snowflake, Tableau", "10-15 Lacs", "Data Analyst", "Bangalore", ["Power BI", "SQL", "Snowflake", "Excel"])
+    ]
+    
+    for title, desc, sal, role, loc, skills in sample_jobs:
+        cursor.execute('''
+            INSERT INTO jobs (title, description, salary, role, location, extracted_skills)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (title, desc, sal, role, loc, json.dumps(skills)))
+    
+    conn.commit()
+    conn.close()
 
 # Page Config
 st.set_page_config(
@@ -87,8 +117,9 @@ with st.sidebar:
 st.title("🎯 Placement Prep Skill Extractor")
 st.caption("Know exactly which skills are in demand before you apply.")
 
-# Initialize DB Table on startup
+# Initialize DB Table and seed if empty
 create_table()
+seed_data()
 
 # Check for data
 db_path = get_db_path()
