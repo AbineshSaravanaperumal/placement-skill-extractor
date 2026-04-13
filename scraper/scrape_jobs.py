@@ -1,3 +1,4 @@
+# Job Scraper Module - Updated with TimesJobs Support
 import os
 import sqlite3
 import requests
