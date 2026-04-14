@@ -85,13 +85,6 @@ with st.sidebar:
     top_n = st.slider("Number of skills to show", 5, 20, 15)
     
     st.divider()
-    with st.expander("ℹ️ Data Methodology"):
-        st.caption("""
-        I use a curated set of real job description templates that accurately reflect current market requirements for each role. 
-        
-        The scraping architecture is built to plug in any live data source — JSearch, Naukri, LinkedIn — the moment it moves into a funded environment with an API budget.
-        """)
-
     st.divider()
     
     if st.button("🔄 Refresh Data"):
@@ -135,9 +128,18 @@ with st.sidebar:
     except:
         st.warning("🔴 Database not initialized")
 
-# Main Area
-st.title("🎯 Placement Prep Skill Extractor")
-st.caption("Know exactly which skills are in demand before you apply.")
+# Main Area Header
+t1, t2 = st.columns([2, 1])
+with t1:
+    st.title("🎯 Placement Prep Skill Extractor")
+    st.caption("Know exactly which skills are in demand before you apply.")
+with t2:
+    st.info("""
+    **Note**  
+    I use a curated set of real job description templates that accurately reflect current market requirements for each role. 
+    
+    The scraping architecture is built to plug in any live data source — JSearch, Naukri, LinkedIn — the moment it moves into a funded environment with an API budget.
+    """)
 
 # Initialize DB Table and seed if empty
 create_table()
