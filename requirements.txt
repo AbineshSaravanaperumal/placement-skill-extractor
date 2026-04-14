@@ -1,8 +1,10 @@
 requests>=2.31.0
 beautifulsoup4
 openai
+google-generativeai
 pandas
 # Rebuild trigger: 2026-04-13-v4
 streamlit
 plotly
 python-dotenv
+

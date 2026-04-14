@@ -20,7 +20,7 @@ from inject_demo_data import get_demo_jobs
 
 print("APP_VERSION: 1.0.4 - Role Filtering & Browser Headers")
 from scraper.scrape_jobs import create_table, scrape_naukri, scrape_timesjobs, save_to_db, get_db_path
-from processor.extract_skills import process_all_jobs, get_api_key
+from processor.extract_skills import process_all_jobs, get_keys
 from processor.analyze_data import get_top_skills, extract_salary_data, get_skill_gap
 import json
 
@@ -294,7 +294,8 @@ if user_input:
     if st.button("📅 Generate 30-Day Study Plan"):
         with st.spinner("AI is crafting your personal learning roadmap..."):
             try:
-                client = OpenAI(api_key=get_api_key())
+                keys = get_keys()
+                client = OpenAI(api_key=keys["openai"])
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[
