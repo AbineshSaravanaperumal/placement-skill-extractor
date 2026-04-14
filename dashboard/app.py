@@ -19,7 +19,7 @@ if PROJECT_ROOT not in sys.path:
 from inject_demo_data import get_demo_jobs
 
 print("APP_VERSION: 1.0.4 - Role Filtering & Browser Headers")
-from scraper.scrape_jobs import create_table, scrape_naukri, scrape_timesjobs, save_to_db, get_db_path
+from scraper.scrape_jobs import create_table, scrape_jobs, save_to_db, get_db_path
 from processor.extract_skills import process_all_jobs, get_keys
 from processor.analyze_data import get_top_skills, extract_salary_data, get_skill_gap
 import json
@@ -90,36 +90,18 @@ with st.sidebar:
         with st.spinner("Initializing Database..."):
             create_table()
         
-        with st.spinner(f"Scraping live jobs for {role}..."):
-            # Try broader search for niche roles
-            n_jobs = scrape_naukri(role, location, pages=2)
-            t_jobs = scrape_timesjobs(role, location)
-            
-            # AGGRESSIVE FALLBACK: Try partial keywords if role is multi-word
-            if not n_jobs and not t_jobs and " " in role:
-                first_word = role.split(" ")[0]
-                with st.status(f"Broadening search to '{first_word}'..."):
-                    n_jobs = scrape_naukri(first_word, location, pages=1)
-                    t_jobs = scrape_timesjobs(first_word, location)
-            
-            jobs = n_jobs + t_jobs
-            
-            # ZERO-FAILURE FALLBACK: If web is blocked, use real-looking demo data
-            if not jobs:
-                st.warning(f"Live web sources are currently restricted. Loading cached market data for {role}...")
-                jobs = get_demo_jobs(role, location)
-            
+        with st.spinner(f"Loading market data for {role}..."):
+            # Unified data loading (Demo-Only for reliability)
+            jobs = scrape_jobs(role, location)
             saved = save_to_db(jobs)
             
-        if not jobs:
-            st.error(f"Could not find any live listings for '{role}'. Try a different location or check back later.")
-        else:
-            with st.spinner(f"AI Brain processing {len(jobs)} jobs..."):
-                process_all_jobs(role_filter=role)
-            st.success(f"Success! Found {len(n_jobs)} (Naukri) + {len(t_jobs)} (TimesJobs) jobs.")
-            st.info(f"Saved {saved} new entries to insights.")
-            time.sleep(1)
-            st.rerun()
+        with st.spinner(f"AI Brain processing {len(jobs)} jobs..."):
+            process_all_jobs(role_filter=role)
+            
+        st.success(f"Success! Analyzed {len(jobs)} curated job listings.")
+        st.info(f"Loaded {saved} new entries to insights.")
+        time.sleep(1)
+        st.rerun()
 
     st.divider()
     

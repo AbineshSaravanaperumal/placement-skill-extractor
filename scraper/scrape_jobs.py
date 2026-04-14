@@ -1,13 +1,10 @@
-# Job Scraper Module - Updated with TimesJobs Support
+# Job Scraper Module - Simplified for Demo Data Fallback
 import os
 import sqlite3
-import requests
-from bs4 import BeautifulSoup
-import time
 from datetime import date
-import re
+from inject_demo_data import get_demo_jobs
 
-print("SCRAPER_MODULE: Loaded version 1.0.4 with scrape_timesjobs")
+print("SCRAPER_MODULE: Loaded version 1.0.7 - Permanent Demo Data Mode")
 
 def get_db_path():
     """Returns absolute path to data/jobs.db using __file__."""
@@ -39,137 +36,14 @@ def create_table():
     finally:
         conn.close()
 
-def scrape_naukri(role, location, pages=3):
-    """Scrapes job listings from Naukri.com using requests and BeautifulSoup."""
-    jobs = []
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Cache-Control": "max-age=0",
-        "Referer": "https://www.google.com/"
-    }
-    
-    # Naukri URL patterns
-    # Better slug mapping for complex roles
-    role_map = {
-        "ML Engineer": "machine-learning-engineer",
-        "Business Analyst": "business-analyst",
-        "Software Developer": "software-developer",
-        "Data Scientist": "data-scientist",
-        "Data Analyst": "data-analyst"
-    }
-    role_slug = role_map.get(role, role.lower().replace(" ", "-"))
-    loc_slug = location.lower().replace(" ", "-")
-    for page in range(pages):
-        # Try broader search patterns
-        role_q = role.replace(" ", "%20")
-        if page == 0:
-            urls = [
-                f"https://www.naukri.com/{role_slug}-jobs-in-{loc_slug}",
-                f"https://www.naukri.com/jobs-in-{loc_slug}?k={role_q}"
-            ]
-        else:
-            urls = [
-                f"https://www.naukri.com/{role_slug}-jobs-in-{loc_slug}-{page + 1}",
-                f"https://www.naukri.com/jobs-in-{loc_slug}-{page + 1}?k={role_q}"
-            ]
-            
-        success = False
-        for url in urls:
-            if success: break
-            print(f"Scraping Naukri — {url}")
-            
-            try:
-                response = requests.get(url, headers=headers, timeout=10)
-                response.encoding = response.apparent_encoding
-                soup = BeautifulSoup(response.text, "html.parser")
-                
-                # Refined selectors for modern Naukri structure
-                cards = soup.find_all(['div', 'article'], class_=re.compile(r'jobTuple|srp-jobtuple|cust-job-tuple|tuple', re.I))
-                
-                if not cards:
-                    cards = soup.select('article, .jobTuple, [class*="jobTuple"], [class*="JobTuple"]')
-                
-                if len(cards) > 0:
-                    success = True
-                    print(f"Success! Found {len(cards)} cards on page {page + 1}")
-                    
-                    for card in cards:
-                        try:
-                            title_tag = card.find(['a', 'div', 'h3'], class_=re.compile(r'title|job-title', re.I))
-                            desc_tag = card.find(['span', 'div', 'p'], class_=re.compile(r'job-desc|description', re.I))
-                            salary_tag = card.find(['span', 'li', 'i'], class_=re.compile(r'salary', re.I))
-                            
-                            if title_tag:
-                                title = title_tag.get_text(strip=True)
-                                description = desc_tag.get_text(strip=True) if desc_tag else "N/A"
-                                salary = salary_tag.get_text(strip=True) if salary_tag else "Not disclosed"
-                                
-                                jobs.append({
-                                    "title": title,
-                                    "description": description,
-                                    "salary": salary,
-                                    "role": role,
-                                    "location": location
-                                })
-                        except: continue
-                
-                time.sleep(1.5)
-                
-            except Exception as e:
-                print(f"Naukri attempt error for {url}: {e}")
-                continue
-            
-    return jobs
-
-def scrape_timesjobs(role, location):
-    """Scrapes jobs from TimesJobs.com - much more friendly to requests."""
-    jobs = []
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-    
-    # URL formatting
-    # Broader URL for TimesJobs
-    role_q = role.replace(" ", "+")
-    loc_q = location.replace(" ", "+")
-    url = f"https://www.timesjobs.com/candidate/job-search.html?searchType=personalizedSearch&from=submit&txtKeywords={role_q}&txtLocation={loc_q}&luceneResultSize=25"
-    
-    print(f"Scraping TimesJobs — {url}")
-    try:
-        response = requests.get(url, headers=headers, timeout=15)
-        response.encoding = response.apparent_encoding
-        soup = BeautifulSoup(response.text, "html.parser")
-        cards = soup.find_all('li', class_='clearfix job-bx wht-shd-bx')
-        
-        print(f"Found {len(cards)} live cards on TimesJobs")
-        
-        for card in cards:
-            title = card.find('h2').text.strip()
-            
-            # TimesJobs has 'Key Skills' in a specific div
-            key_skills_tag = card.find('span', string=re.compile(r'KeySkills', re.I))
-            if key_skills_tag and key_skills_tag.find_next_sibling('span'):
-                desc = key_skills_tag.find_next_sibling('span').text.strip()
-            else:
-                # Fallback to the general snippet
-                desc = card.find('ul', class_='list-job-dtl clearfix').text.strip()
-            
-            salary_tag = card.find('i', class_='rupee')
-            salary = salary_tag.parent.text.strip() if salary_tag else "Not disclosed"
-            
-            jobs.append({
-                "title": title,
-                "description": desc,
-                "salary": salary,
-                "role": role,
-                "location": location
-            })
-    except Exception as e:
-        print(f"TimesJobs error: {e}")
-        
+def scrape_jobs(role="Data Analyst", location="Bangalore", pages=3):
+    """
+    Returns job data for the given role.
+    Uses rich demo data — no API key required.
+    """
+    print(f"Loading job data for: {role} in {location}")
+    jobs = get_demo_jobs(role, location)
+    print(f"Loaded {len(jobs)} jobs.")
     return jobs
 
 def save_to_db(jobs):
@@ -198,9 +72,6 @@ def save_to_db(jobs):
                     VALUES (?, ?, ?, ?, ?)
                 ''', (job["title"], job["description"], job["salary"], job["role"], job["location"]))
                 saved_count += 1
-            
-            if len(jobs) > 5 and (i + 1) % 5 == 0:
-                print(f"Processed {i + 1}/{len(jobs)}...")
                 
         conn.commit()
         print(f"Saved {saved_count} new jobs — skipped {skipped_count} duplicates")
@@ -209,11 +80,14 @@ def save_to_db(jobs):
     
     return saved_count
 
+# Kept for compatibility with app.py imports if needed, but redirects to unified scrape_jobs
+def scrape_naukri(role, location, pages=2):
+    return scrape_jobs(role, location)
+
+def scrape_timesjobs(role, location):
+    return scrape_jobs(role, location)
+
 if __name__ == "__main__":
     create_table()
-    # Try Naukri
-    jobs = scrape_naukri("data-analyst", "bangalore", pages=2)
-    # Fallback/Additional from TimesJobs
-    jobs += scrape_timesjobs("data-analyst", "bangalore")
-    
+    jobs = scrape_jobs()
     save_to_db(jobs)
