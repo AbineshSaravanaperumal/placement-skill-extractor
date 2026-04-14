@@ -1,6 +1,6 @@
-# Job Scraper Module - Simplified for Demo Data Fallback
 import os
 import sqlite3
+import json
 from datetime import date
 from inject_demo_data import get_demo_jobs
 
@@ -67,10 +67,13 @@ def save_to_db(jobs):
             if cursor.fetchone():
                 skipped_count += 1
             else:
+                # Save extracted_skills if using demo data/pre-extracted info
+                extracted = json.dumps(job.get("skills", [])) if "skills" in job else None
+                
                 cursor.execute('''
-                    INSERT INTO jobs (title, description, salary, role, location)
-                    VALUES (?, ?, ?, ?, ?)
-                ''', (job["title"], job["description"], job["salary"], job["role"], job["location"]))
+                    INSERT INTO jobs (title, description, salary, role, location, extracted_skills)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ''', (job["title"], job["description"], job["salary"], job["role"], job["location"], extracted))
                 saved_count += 1
                 
         conn.commit()
