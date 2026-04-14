@@ -89,6 +89,12 @@ with st.sidebar:
     if st.button("🔄 Refresh Data"):
         with st.spinner("Initializing Database..."):
             create_table()
+            # Clear previous entries for this role to force refresh with new skills
+            conn = sqlite3.connect(get_db_path())
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM jobs WHERE role = ?", (role,))
+            conn.commit()
+            conn.close()
         
         with st.spinner(f"Loading market data for {role}..."):
             # Unified data loading (Demo-Only for reliability)
