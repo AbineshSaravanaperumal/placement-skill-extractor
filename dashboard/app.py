@@ -85,6 +85,14 @@ with st.sidebar:
     top_n = st.slider("Number of skills to show", 5, 20, 15)
     
     st.divider()
+    with st.expander("ℹ️ Data Methodology"):
+        st.caption("""
+        I use a curated set of real job description templates that accurately reflect current market requirements for each role. 
+        
+        The scraping architecture is built to plug in any live data source — JSearch, Naukri, LinkedIn — the moment it moves into a funded environment with an API budget.
+        """)
+
+    st.divider()
     
     if st.button("🔄 Refresh Data"):
         with st.spinner("Initializing Database..."):
